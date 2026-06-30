@@ -136,6 +136,32 @@
       50%       { box-shadow: 0 0 0 8px rgba(168,85,247,0); }
     }
     #start-btn { animation: btn-pulse 2s ease infinite; }
+
+    /* 背景图拖放高亮 */
+    .drag-over { outline: 3px dashed #a78bfa !important; }
+
+    /* 背景控制条 */
+    #bg-controls {
+      background: rgba(10,10,30,0.85);
+      border: 1px solid rgba(124,58,237,0.4);
+      backdrop-filter: blur(6px);
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.15);
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #a78bfa;
+      cursor: pointer;
+      box-shadow: 0 0 6px #a78bfa88;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 select-none">
@@ -147,6 +173,28 @@
     <!-- 标题 -->
     <div class="float-title mb-6 text-center">
       <h1 class="text-3xl font-bold rainbow-title">俄罗斯方块</h1>
+    </div>
+
+    <!-- 背景图控制条 -->
+    <div id="bg-controls" class="flex items-center gap-4 mb-4 px-5 py-2.5 rounded-xl text-xs">
+      <button id="bg-btn"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500
+               text-white transition-colors cursor-pointer whitespace-nowrap">
+        🖼 选择背景图
+      </button>
+      <input id="bg-file" type="file" accept="image/*" class="hidden" />
+
+      <div id="bg-opacity-wrap" class="flex items-center gap-2 hidden">
+        <span class="text-gray-400 whitespace-nowrap">透明度</span>
+        <input id="bg-opacity" type="range" min="5" max="70" value="30" class="w-24" />
+        <span id="bg-opacity-val" class="text-purple-300 w-6 text-right">30%</span>
+      </div>
+
+      <button id="bg-clear" class="text-gray-500 hover:text-red-400 transition-colors cursor-pointer hidden whitespace-nowrap">
+        ✕ 移除
+      </button>
+
+      <span class="text-gray-600 text-xs hidden" id="bg-hint">或拖拽图片到游戏区域</span>
     </div>
 
     <!-- 主体 -->
@@ -173,7 +221,7 @@
       </div>
 
       <!-- 游戏画布 -->
-      <div id="canvas-container" class="relative canvas-wrap glow-purple rounded-xl overflow-hidden" style="line-height:0;">
+      <div id="canvas-container" class="relative canvas-wrap glow-purple rounded-xl overflow-hidden" style="line-height:0;" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event)">
         <canvas id="game-canvas" width="300" height="600"></canvas>
 
         <!-- 硬落闪光层 -->
@@ -232,6 +280,69 @@
   </div>
 
   <script>
+  // ═══════════════════════════════════════════════════════
+  //  背景图系统
+  // ═══════════════════════════════════════════════════════
+  let bgImage = null;
+  let bgOpacity = 0.30;
+
+  const bgBtn         = document.getElementById('bg-btn');
+  const bgFile        = document.getElementById('bg-file');
+  const bgOpacitySlider = document.getElementById('bg-opacity');
+  const bgOpacityVal  = document.getElementById('bg-opacity-val');
+  const bgOpacityWrap = document.getElementById('bg-opacity-wrap');
+  const bgClear       = document.getElementById('bg-clear');
+  const bgHint        = document.getElementById('bg-hint');
+
+  function loadBgImage(src) {
+    const img = new Image();
+    img.onload = () => {
+      bgImage = img;
+      bgOpacityWrap.classList.remove('hidden');
+      bgClear.classList.remove('hidden');
+      bgHint.classList.remove('hidden');
+    };
+    img.src = src;
+  }
+
+  function applyBgFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      localStorage.setItem('tetris-bg', e.target.result);
+      loadBgImage(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('canvas-container').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    applyBgFile(file);
+  }
+
+  bgBtn.addEventListener('click', () => bgFile.click());
+  bgFile.addEventListener('change', e => applyBgFile(e.target.files[0]));
+
+  bgOpacitySlider.addEventListener('input', () => {
+    bgOpacity = bgOpacitySlider.value / 100;
+    bgOpacityVal.textContent = bgOpacitySlider.value + '%';
+  });
+
+  bgClear.addEventListener('click', () => {
+    bgImage = null;
+    localStorage.removeItem('tetris-bg');
+    bgOpacityWrap.classList.add('hidden');
+    bgClear.classList.add('hidden');
+    bgHint.classList.add('hidden');
+    bgFile.value = '';
+  });
+
+  // 读取已保存的背景
+  const savedBg = localStorage.getItem('tetris-bg');
+  if (savedBg) loadBgImage(savedBg);
+
   // ═══════════════════════════════════════════════════════
   //  常量
   // ═══════════════════════════════════════════════════════
@@ -460,9 +571,26 @@
     ctx.save();
     ctx.translate(sx, sy);
 
-    // 背景
+    // 背景底色
     ctx.fillStyle = '#07071a';
     ctx.fillRect(-sx, -sy, canvas.width, canvas.height);
+
+    // 背景图（带透明度，等比裁剪填满画布）
+    if (bgImage) {
+      ctx.save();
+      ctx.globalAlpha = bgOpacity;
+      const cw = canvas.width, ch = canvas.height;
+      const iw = bgImage.width,  ih = bgImage.height;
+      const scale = Math.max(cw / iw, ch / ih);
+      const dw = iw * scale, dh = ih * scale;
+      const dx = (cw - dw) / 2, dy = (ch - dh) / 2;
+      ctx.drawImage(bgImage, dx, dy, dw, dh);
+      // 深色蒙版让方块更清晰
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.restore();
+    }
 
     // 网格
     ctx.strokeStyle = 'rgba(255,255,255,0.035)';
