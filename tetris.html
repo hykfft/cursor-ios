@@ -9,156 +9,221 @@
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
     body {
-      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      background: #07071a;
       font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
     }
 
-    #game-canvas {
-      image-rendering: pixelated;
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
     }
 
-    .glow {
-      filter: drop-shadow(0 0 8px currentColor);
+    #app {
+      position: relative;
+      z-index: 1;
     }
 
-    .block-glow {
-      box-shadow: inset 0 0 8px rgba(255,255,255,0.3), 0 0 4px currentColor;
-    }
+    canvas { display: block; }
 
-    .neon-border {
-      box-shadow: 0 0 10px #7c3aed, 0 0 20px #7c3aed, inset 0 0 10px rgba(124,58,237,0.1);
+    /* 游戏画布容器动态发光 */
+    .canvas-wrap {
+      transition: box-shadow 0.6s ease;
+    }
+    .canvas-wrap.glow-purple {
+      box-shadow: 0 0 12px #7c3aed, 0 0 30px #7c3aed88, inset 0 0 12px rgba(124,58,237,0.08);
       border: 1px solid #7c3aed;
+    }
+    .canvas-wrap.glow-cyan {
+      box-shadow: 0 0 12px #06b6d4, 0 0 30px #06b6d488, inset 0 0 12px rgba(6,182,212,0.08);
+      border: 1px solid #06b6d4;
+    }
+    .canvas-wrap.glow-green {
+      box-shadow: 0 0 12px #22c55e, 0 0 30px #22c55e88, inset 0 0 12px rgba(34,197,94,0.08);
+      border: 1px solid #22c55e;
+    }
+    .canvas-wrap.glow-yellow {
+      box-shadow: 0 0 12px #eab308, 0 0 30px #eab30888, inset 0 0 12px rgba(234,179,8,0.08);
+      border: 1px solid #eab308;
+    }
+    .canvas-wrap.glow-red {
+      box-shadow: 0 0 12px #ef4444, 0 0 30px #ef444488, inset 0 0 12px rgba(239,68,68,0.08);
+      border: 1px solid #ef4444;
     }
 
     .info-panel {
-      box-shadow: 0 0 10px #1e40af, 0 0 20px #1e40af, inset 0 0 10px rgba(30,64,175,0.1);
-      border: 1px solid #3b82f6;
+      box-shadow: 0 0 8px #1e40af88, inset 0 0 8px rgba(30,64,175,0.06);
+      border: 1px solid #3b82f644;
+      background: rgba(10,10,30,0.7);
     }
 
     .key-hint {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
-    @keyframes flash {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
+    /* 标题彩虹流动 */
+    @keyframes rainbow-flow {
+      0%   { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
     }
-
-    .flash-line {
-      animation: flash 0.1s ease-in-out 3;
+    .rainbow-title {
+      background: linear-gradient(90deg,
+        #f472b6, #a78bfa, #60a5fa, #34d399, #fbbf24, #f87171, #f472b6);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: rainbow-flow 3s linear infinite;
     }
 
     @keyframes float {
       0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-6px); }
+      50%       { transform: translateY(-6px); }
+    }
+    .float-title { animation: float 3s ease-in-out infinite; }
+
+    /* 升级提示 */
+    @keyframes level-up-anim {
+      0%   { opacity: 0; transform: scale(0.5) translateY(20px); }
+      30%  { opacity: 1; transform: scale(1.15) translateY(-5px); }
+      70%  { opacity: 1; transform: scale(1)    translateY(0); }
+      100% { opacity: 0; transform: scale(0.8)  translateY(-30px); }
+    }
+    #level-up-toast {
+      pointer-events: none;
+      animation: level-up-anim 1.4s ease forwards;
     }
 
-    .float-title {
-      animation: float 3s ease-in-out infinite;
+    /* 面板数字跳动 */
+    @keyframes number-pop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.4); }
+      100% { transform: scale(1); }
+    }
+    .number-pop { animation: number-pop 0.3s ease; }
+
+    /* 遮罩淡入 */
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    #overlay { animation: fade-in 0.3s ease; }
+
+    /* 游戏结束抖动 */
+    @keyframes game-over-shake {
+      0%, 100% { transform: translateX(0); }
+      20%  { transform: translateX(-6px); }
+      40%  { transform: translateX( 6px); }
+      60%  { transform: translateX(-4px); }
+      80%  { transform: translateX( 4px); }
+    }
+    .shake { animation: game-over-shake 0.5s ease; }
+
+    /* 硬落冲击 */
+    @keyframes hard-drop-flash {
+      0%   { opacity: 0.6; }
+      100% { opacity: 0; }
     }
 
-    canvas {
-      display: block;
+    /* 按钮脉冲 */
+    @keyframes btn-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.5); }
+      50%       { box-shadow: 0 0 0 8px rgba(168,85,247,0); }
     }
+    #start-btn { animation: btn-pulse 2s ease infinite; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 select-none">
 
-  <!-- 标题 -->
-  <div class="float-title mb-6 text-center">
-    <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 glow">
-      俄罗斯方块
-    </h1>
-  </div>
+  <!-- 背景粒子 -->
+  <canvas id="bg-canvas"></canvas>
 
-  <!-- 主体布局 -->
-  <div class="flex gap-6 items-start">
-
-    <!-- 左侧信息面板 -->
-    <div class="flex flex-col gap-4 w-36">
-
-      <!-- 分数 -->
-      <div class="info-panel rounded-xl p-4 text-center">
-        <p class="text-blue-400 text-xs mb-2">得分</p>
-        <p id="score" class="text-white text-lg">0</p>
-      </div>
-
-      <!-- 最高分 -->
-      <div class="info-panel rounded-xl p-4 text-center">
-        <p class="text-blue-400 text-xs mb-2">最高分</p>
-        <p id="high-score" class="text-yellow-400 text-lg">0</p>
-      </div>
-
-      <!-- 关卡 -->
-      <div class="info-panel rounded-xl p-4 text-center">
-        <p class="text-blue-400 text-xs mb-2">关卡</p>
-        <p id="level" class="text-green-400 text-lg">1</p>
-      </div>
-
-      <!-- 消除行数 -->
-      <div class="info-panel rounded-xl p-4 text-center">
-        <p class="text-blue-400 text-xs mb-2">消行</p>
-        <p id="lines" class="text-cyan-400 text-lg">0</p>
-      </div>
-
+  <div id="app" class="flex flex-col items-center">
+    <!-- 标题 -->
+    <div class="float-title mb-6 text-center">
+      <h1 class="text-3xl font-bold rainbow-title">俄罗斯方块</h1>
     </div>
 
-    <!-- 游戏画布 -->
-    <div class="relative neon-border rounded-xl overflow-hidden" style="line-height:0;">
-      <canvas id="game-canvas" width="300" height="600"></canvas>
-      <!-- 游戏开始/结束遮罩 -->
-      <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-80 rounded-xl">
-        <p id="overlay-title" class="text-purple-400 text-xl mb-4 text-center leading-relaxed">俄罗斯<br/>方块</p>
-        <p id="overlay-subtitle" class="text-gray-300 text-xs mb-8 text-center leading-loose">经典益智游戏</p>
-        <button id="start-btn"
-          class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500
-                 text-white text-sm rounded-lg transition-all duration-200 transform hover:scale-105
-                 shadow-lg shadow-purple-500/40 cursor-pointer">
-          开始游戏
+    <!-- 主体 -->
+    <div class="flex gap-6 items-start">
+
+      <!-- 左侧面板 -->
+      <div class="flex flex-col gap-4 w-36">
+        <div class="info-panel rounded-xl p-4 text-center">
+          <p class="text-blue-400 text-xs mb-2">得分</p>
+          <p id="score" class="text-white text-lg transition-all">0</p>
+        </div>
+        <div class="info-panel rounded-xl p-4 text-center">
+          <p class="text-blue-400 text-xs mb-2">最高分</p>
+          <p id="high-score" class="text-yellow-400 text-lg">0</p>
+        </div>
+        <div class="info-panel rounded-xl p-4 text-center">
+          <p class="text-blue-400 text-xs mb-2">关卡</p>
+          <p id="level" class="text-green-400 text-lg">1</p>
+        </div>
+        <div class="info-panel rounded-xl p-4 text-center">
+          <p class="text-blue-400 text-xs mb-2">消行</p>
+          <p id="lines" class="text-cyan-400 text-lg">0</p>
+        </div>
+      </div>
+
+      <!-- 游戏画布 -->
+      <div id="canvas-container" class="relative canvas-wrap glow-purple rounded-xl overflow-hidden" style="line-height:0;">
+        <canvas id="game-canvas" width="300" height="600"></canvas>
+
+        <!-- 硬落闪光层 -->
+        <div id="drop-flash" class="absolute inset-0 bg-white pointer-events-none opacity-0 rounded-xl"></div>
+
+        <!-- 升级提示 -->
+        <div id="level-up-container" class="absolute inset-0 flex items-center justify-center pointer-events-none"></div>
+
+        <!-- 开始/结束遮罩 -->
+        <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-80 rounded-xl">
+          <p id="overlay-title" class="text-purple-400 text-xl mb-4 text-center leading-relaxed">俄罗斯<br/>方块</p>
+          <p id="overlay-subtitle" class="text-gray-300 text-xs mb-8 text-center leading-loose">经典益智游戏</p>
+          <button id="start-btn"
+            class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500
+                   text-white text-sm rounded-lg transition-all duration-200 transform hover:scale-105
+                   shadow-lg shadow-purple-500/40 cursor-pointer">
+            开始游戏
+          </button>
+        </div>
+      </div>
+
+      <!-- 右侧面板 -->
+      <div class="flex flex-col gap-4 w-36">
+        <div class="info-panel rounded-xl p-4 text-center">
+          <p class="text-blue-400 text-xs mb-3">下一个</p>
+          <canvas id="next-canvas" width="100" height="80" class="mx-auto"></canvas>
+        </div>
+        <button id="pause-btn"
+          class="info-panel rounded-xl p-3 text-center text-yellow-400 text-xs cursor-pointer
+                 hover:bg-yellow-400/10 transition-colors duration-200 hidden">
+          ⏸ 暂停
         </button>
-      </div>
-    </div>
-
-    <!-- 右侧面板 -->
-    <div class="flex flex-col gap-4 w-36">
-
-      <!-- 下一个方块 -->
-      <div class="info-panel rounded-xl p-4 text-center">
-        <p class="text-blue-400 text-xs mb-3">下一个</p>
-        <canvas id="next-canvas" width="100" height="80" class="mx-auto"></canvas>
-      </div>
-
-      <!-- 暂停按钮 -->
-      <button id="pause-btn"
-        class="info-panel rounded-xl p-3 text-center text-yellow-400 text-xs cursor-pointer
-               hover:bg-yellow-400/10 transition-colors duration-200 hidden">
-        ⏸ 暂停
-      </button>
-
-      <!-- 按键说明 -->
-      <div class="info-panel rounded-xl p-3">
-        <p class="text-blue-400 text-xs mb-3 text-center">操作</p>
-        <div class="flex flex-col gap-1.5 text-xs">
-          <div class="key-hint rounded px-2 py-1 flex justify-between">
-            <span class="text-gray-400">←→</span>
-            <span class="text-white">移动</span>
-          </div>
-          <div class="key-hint rounded px-2 py-1 flex justify-between">
-            <span class="text-gray-400">↑</span>
-            <span class="text-white">旋转</span>
-          </div>
-          <div class="key-hint rounded px-2 py-1 flex justify-between">
-            <span class="text-gray-400">↓</span>
-            <span class="text-white">加速</span>
-          </div>
-          <div class="key-hint rounded px-2 py-1 flex justify-between">
-            <span class="text-gray-400">空格</span>
-            <span class="text-white">直落</span>
-          </div>
-          <div class="key-hint rounded px-2 py-1 flex justify-between">
-            <span class="text-gray-400">P</span>
-            <span class="text-white">暂停</span>
+        <div class="info-panel rounded-xl p-3">
+          <p class="text-blue-400 text-xs mb-3 text-center">操作</p>
+          <div class="flex flex-col gap-1.5 text-xs">
+            <div class="key-hint rounded px-2 py-1 flex justify-between">
+              <span class="text-gray-400">←→</span><span class="text-white">移动</span>
+            </div>
+            <div class="key-hint rounded px-2 py-1 flex justify-between">
+              <span class="text-gray-400">↑</span><span class="text-white">旋转</span>
+            </div>
+            <div class="key-hint rounded px-2 py-1 flex justify-between">
+              <span class="text-gray-400">↓</span><span class="text-white">加速</span>
+            </div>
+            <div class="key-hint rounded px-2 py-1 flex justify-between">
+              <span class="text-gray-400">空格</span><span class="text-white">直落</span>
+            </div>
+            <div class="key-hint rounded px-2 py-1 flex justify-between">
+              <span class="text-gray-400">P</span><span class="text-white">暂停</span>
+            </div>
           </div>
         </div>
       </div>
@@ -167,594 +232,736 @@
   </div>
 
   <script>
-    // ─── 常量 ───────────────────────────────────────────────────────────────
-    const COLS = 10;
-    const ROWS = 20;
-    const BLOCK = 30;
+  // ═══════════════════════════════════════════════════════
+  //  常量
+  // ═══════════════════════════════════════════════════════
+  const COLS = 10, ROWS = 20, BLOCK = 30;
 
-    // 方块颜色主题（渐变色）
-    const COLORS = {
-      I: { fill: '#06b6d4', stroke: '#0e7490', shadow: '#22d3ee' },
-      O: { fill: '#eab308', stroke: '#a16207', shadow: '#facc15' },
-      T: { fill: '#a855f7', stroke: '#7e22ce', shadow: '#c084fc' },
-      S: { fill: '#22c55e', stroke: '#15803d', shadow: '#4ade80' },
-      Z: { fill: '#ef4444', stroke: '#b91c1c', shadow: '#f87171' },
-      J: { fill: '#3b82f6', stroke: '#1d4ed8', shadow: '#60a5fa' },
-      L: { fill: '#f97316', stroke: '#c2410c', shadow: '#fb923c' },
+  const COLORS = {
+    I: { fill: '#06b6d4', stroke: '#0e7490' },
+    O: { fill: '#eab308', stroke: '#a16207' },
+    T: { fill: '#a855f7', stroke: '#7e22ce' },
+    S: { fill: '#22c55e', stroke: '#15803d' },
+    Z: { fill: '#ef4444', stroke: '#b91c1c' },
+    J: { fill: '#3b82f6', stroke: '#1d4ed8' },
+    L: { fill: '#f97316', stroke: '#c2410c' },
+  };
+
+  const TETROMINOES = {
+    I:[[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],[[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]],[[0,0,0,0],[0,0,0,0],[1,1,1,1],[0,0,0,0]],[[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]]],
+    O:[[[0,1,1,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]]],
+    T:[[[0,1,0],[1,1,1],[0,0,0]],[[0,1,0],[0,1,1],[0,1,0]],[[0,0,0],[1,1,1],[0,1,0]],[[0,1,0],[1,1,0],[0,1,0]]],
+    S:[[[0,1,1],[1,1,0],[0,0,0]],[[0,1,0],[0,1,1],[0,0,1]],[[0,0,0],[0,1,1],[1,1,0]],[[1,0,0],[1,1,0],[0,1,0]]],
+    Z:[[[1,1,0],[0,1,1],[0,0,0]],[[0,0,1],[0,1,1],[0,1,0]],[[0,0,0],[1,1,0],[0,1,1]],[[0,1,0],[1,1,0],[1,0,0]]],
+    J:[[[1,0,0],[1,1,1],[0,0,0]],[[0,1,1],[0,1,0],[0,1,0]],[[0,0,0],[1,1,1],[0,0,1]],[[0,1,0],[0,1,0],[1,1,0]]],
+    L:[[[0,0,1],[1,1,1],[0,0,0]],[[0,1,0],[0,1,0],[0,1,1]],[[0,0,0],[1,1,1],[1,0,0]],[[1,1,0],[0,1,0],[0,1,0]]],
+  };
+  const PIECE_TYPES = Object.keys(TETROMINOES);
+  const LEVEL_SPEEDS = [800,700,600,500,420,340,270,210,160,120,90,60];
+  const LINE_SCORES  = [0,100,300,500,800];
+  const LEVEL_GLOWS  = ['glow-purple','glow-cyan','glow-green','glow-yellow','glow-red'];
+
+  // ═══════════════════════════════════════════════════════
+  //  状态
+  // ═══════════════════════════════════════════════════════
+  let board, currentPiece, nextPiece;
+  let score = 0, highScore = parseInt(localStorage.getItem('tetris-hs')||'0');
+  let level = 1, lines = 0;
+  let gameRunning = false, gamePaused = false;
+  let animFrameId = null, lastTime = 0, dropCounter = 0;
+
+  // 粒子列表
+  let particles = [];
+  // 浮动得分文字
+  let scorePopups = [];
+  // 消行扫光进度 [{row, progress 0..1}]
+  let clearSweeps = [];
+  // 方块出生动画 {progress 0..1}
+  let spawnAnim = null;
+  // 画面震动
+  let shakeFrames = 0, shakeIntensity = 0;
+
+  // ═══════════════════════════════════════════════════════
+  //  DOM
+  // ═══════════════════════════════════════════════════════
+  const canvas     = document.getElementById('game-canvas');
+  const ctx        = canvas.getContext('2d');
+  const nextCanvas = document.getElementById('next-canvas');
+  const nextCtx    = nextCanvas.getContext('2d');
+  const bgCanvas   = document.getElementById('bg-canvas');
+  const bgCtx      = bgCanvas.getContext('2d');
+  const overlay    = document.getElementById('overlay');
+  const overlayTitle    = document.getElementById('overlay-title');
+  const overlaySubtitle = document.getElementById('overlay-subtitle');
+  const startBtn   = document.getElementById('start-btn');
+  const pauseBtn   = document.getElementById('pause-btn');
+  const scoreEl    = document.getElementById('score');
+  const highScoreEl= document.getElementById('high-score');
+  const levelEl    = document.getElementById('level');
+  const linesEl    = document.getElementById('lines');
+  const canvasWrap = document.getElementById('canvas-container');
+  const dropFlash  = document.getElementById('drop-flash');
+  const levelUpContainer = document.getElementById('level-up-container');
+
+  highScoreEl.textContent = highScore;
+
+  // ═══════════════════════════════════════════════════════
+  //  背景星尘粒子系统
+  // ═══════════════════════════════════════════════════════
+  const bgParticles = Array.from({length: 80}, () => ({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    r: Math.random() * 1.5 + 0.3,
+    vx: (Math.random() - 0.5) * 0.15,
+    vy: (Math.random() - 0.5) * 0.15,
+    alpha: Math.random() * 0.5 + 0.1,
+    color: ['#a78bfa','#60a5fa','#34d399','#f472b6'][Math.floor(Math.random()*4)],
+  }));
+
+  function resizeBg() {
+    bgCanvas.width  = window.innerWidth;
+    bgCanvas.height = window.innerHeight;
+  }
+  resizeBg();
+  window.addEventListener('resize', resizeBg);
+
+  function drawBg(ts) {
+    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    bgParticles.forEach(p => {
+      p.x = (p.x + p.vx + bgCanvas.width)  % bgCanvas.width;
+      p.y = (p.y + p.vy + bgCanvas.height) % bgCanvas.height;
+      bgCtx.beginPath();
+      bgCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      bgCtx.fillStyle = p.color;
+      bgCtx.globalAlpha = p.alpha * (0.7 + 0.3 * Math.sin(ts / 800 + p.x));
+      bgCtx.fill();
+    });
+    bgCtx.globalAlpha = 1;
+    requestAnimationFrame(drawBg);
+  }
+  requestAnimationFrame(drawBg);
+
+  // ═══════════════════════════════════════════════════════
+  //  工具
+  // ═══════════════════════════════════════════════════════
+  function createBoard() {
+    return Array.from({length: ROWS}, () => Array(COLS).fill(null));
+  }
+
+  function createPiece(type) {
+    return {
+      type, rotation: 0,
+      x: 3, y: 0,
+      get shape() {
+        return TETROMINOES[this.type][this.rotation % TETROMINOES[this.type].length];
+      }
     };
+  }
 
-    // 七种方块形状（每种方块包含所有旋转状态）
-    const TETROMINOES = {
-      I: [
-        [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
-        [[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]],
-        [[0,0,0,0],[0,0,0,0],[1,1,1,1],[0,0,0,0]],
-        [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],
-      ],
-      O: [
-        [[0,1,1,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]],
-      ],
-      T: [
-        [[0,1,0],[1,1,1],[0,0,0]],
-        [[0,1,0],[0,1,1],[0,1,0]],
-        [[0,0,0],[1,1,1],[0,1,0]],
-        [[0,1,0],[1,1,0],[0,1,0]],
-      ],
-      S: [
-        [[0,1,1],[1,1,0],[0,0,0]],
-        [[0,1,0],[0,1,1],[0,0,1]],
-        [[0,0,0],[0,1,1],[1,1,0]],
-        [[1,0,0],[1,1,0],[0,1,0]],
-      ],
-      Z: [
-        [[1,1,0],[0,1,1],[0,0,0]],
-        [[0,0,1],[0,1,1],[0,1,0]],
-        [[0,0,0],[1,1,0],[0,1,1]],
-        [[0,1,0],[1,1,0],[1,0,0]],
-      ],
-      J: [
-        [[1,0,0],[1,1,1],[0,0,0]],
-        [[0,1,1],[0,1,0],[0,1,0]],
-        [[0,0,0],[1,1,1],[0,0,1]],
-        [[0,1,0],[0,1,0],[1,1,0]],
-      ],
-      L: [
-        [[0,0,1],[1,1,1],[0,0,0]],
-        [[0,1,0],[0,1,0],[0,1,1]],
-        [[0,0,0],[1,1,1],[1,0,0]],
-        [[1,1,0],[0,1,0],[0,1,0]],
-      ],
-    };
+  function randomPiece() {
+    return createPiece(PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)]);
+  }
 
-    const PIECE_TYPES = Object.keys(TETROMINOES);
-
-    // 关卡速度（毫秒/行）
-    const LEVEL_SPEEDS = [800, 700, 600, 500, 420, 340, 270, 210, 160, 120, 90, 60];
-
-    // 消行得分倍数
-    const LINE_SCORES = [0, 100, 300, 500, 800];
-
-    // ─── 状态 ───────────────────────────────────────────────────────────────
-    let board = [];
-    let currentPiece = null;
-    let nextPiece = null;
-    let score = 0;
-    let highScore = parseInt(localStorage.getItem('tetris-high-score') || '0');
-    let level = 1;
-    let lines = 0;
-    let gameRunning = false;
-    let gamePaused = false;
-    let animFrameId = null;
-    let lastTime = 0;
-    let dropCounter = 0;
-    let flashingRows = [];
-
-    // ─── Canvas ──────────────────────────────────────────────────────────────
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    const nextCanvas = document.getElementById('next-canvas');
-    const nextCtx = nextCanvas.getContext('2d');
-
-    // ─── UI 元素 ─────────────────────────────────────────────────────────────
-    const overlay = document.getElementById('overlay');
-    const overlayTitle = document.getElementById('overlay-title');
-    const overlaySubtitle = document.getElementById('overlay-subtitle');
-    const startBtn = document.getElementById('start-btn');
-    const pauseBtn = document.getElementById('pause-btn');
-    const scoreEl = document.getElementById('score');
-    const highScoreEl = document.getElementById('high-score');
-    const levelEl = document.getElementById('level');
-    const linesEl = document.getElementById('lines');
-
-    highScoreEl.textContent = highScore;
-
-    // ─── 初始化游戏板 ────────────────────────────────────────────────────────
-    function createBoard() {
-      return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
-    }
-
-    // ─── 方块类 ──────────────────────────────────────────────────────────────
-    function createPiece(type) {
-      return {
-        type,
-        rotation: 0,
-        x: type === 'I' || type === 'O' ? 3 : 3,
-        y: 0,
-        get shape() {
-          return TETROMINOES[this.type][this.rotation % TETROMINOES[this.type].length];
-        }
-      };
-    }
-
-    function randomPiece() {
-      const type = PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)];
-      return createPiece(type);
-    }
-
-    // ─── 碰撞检测 ────────────────────────────────────────────────────────────
-    function isValid(piece, offsetX = 0, offsetY = 0, rotation = piece.rotation) {
-      const shape = TETROMINOES[piece.type][rotation % TETROMINOES[piece.type].length];
-      for (let r = 0; r < shape.length; r++) {
-        for (let c = 0; c < shape[r].length; c++) {
-          if (!shape[r][c]) continue;
-          const newX = piece.x + c + offsetX;
-          const newY = piece.y + r + offsetY;
-          if (newX < 0 || newX >= COLS || newY >= ROWS) return false;
-          if (newY >= 0 && board[newY][newX]) return false;
-        }
+  function isValid(piece, ox=0, oy=0, rot=piece.rotation) {
+    const shape = TETROMINOES[piece.type][rot % TETROMINOES[piece.type].length];
+    for (let r=0; r<shape.length; r++)
+      for (let c=0; c<shape[r].length; c++) {
+        if (!shape[r][c]) continue;
+        const nx = piece.x+c+ox, ny = piece.y+r+oy;
+        if (nx<0||nx>=COLS||ny>=ROWS) return false;
+        if (ny>=0 && board[ny][nx]) return false;
       }
-      return true;
-    }
+    return true;
+  }
 
-    // ─── 锁定方块 ────────────────────────────────────────────────────────────
-    function lockPiece() {
-      const shape = currentPiece.shape;
-      for (let r = 0; r < shape.length; r++) {
-        for (let c = 0; c < shape[r].length; c++) {
-          if (!shape[r][c]) continue;
-          const y = currentPiece.y + r;
-          const x = currentPiece.x + c;
-          if (y < 0) {
-            endGame();
-            return;
-          }
-          board[y][x] = currentPiece.type;
-        }
-      }
-      clearLines();
-      spawnPiece();
-    }
+  function getGhostY() {
+    let gy = currentPiece.y;
+    while (isValid({...currentPiece, y: gy+1}, 0, 0)) gy++;
+    return gy;
+  }
 
-    // ─── 消行 ────────────────────────────────────────────────────────────────
-    function clearLines() {
-      let cleared = 0;
-      const rowsToClear = [];
-
-      for (let r = ROWS - 1; r >= 0; r--) {
-        if (board[r].every(cell => cell !== null)) {
-          rowsToClear.push(r);
-        }
-      }
-
-      if (rowsToClear.length === 0) return;
-
-      // 闪烁动画
-      flashingRows = rowsToClear;
-      drawBoard();
-
-      setTimeout(() => {
-        flashingRows = [];
-        rowsToClear.forEach(r => {
-          board.splice(r, 1);
-          board.unshift(Array(COLS).fill(null));
+  // ═══════════════════════════════════════════════════════
+  //  粒子爆炸（消行用）
+  // ═══════════════════════════════════════════════════════
+  function spawnExplosion(row) {
+    const color = COLORS[board[row][Math.floor(COLS/2)] || 'I'];
+    for (let c=0; c<COLS; c++) {
+      const type = board[row][c];
+      const col  = type ? COLORS[type].fill : '#ffffff';
+      for (let i=0; i<5; i++) {
+        const angle  = Math.random() * Math.PI * 2;
+        const speed  = Math.random() * 4 + 1;
+        particles.push({
+          x: (c + 0.5) * BLOCK,
+          y: (row + 0.5) * BLOCK,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - Math.random() * 2,
+          life: 1,
+          decay: Math.random() * 0.04 + 0.02,
+          r: Math.random() * 4 + 2,
+          color: col,
         });
-
-        cleared = rowsToClear.length;
-        lines += cleared;
-        score += LINE_SCORES[cleared] * level;
-        level = Math.floor(lines / 10) + 1;
-
-        if (score > highScore) {
-          highScore = score;
-          localStorage.setItem('tetris-high-score', highScore);
-          highScoreEl.textContent = highScore;
-        }
-
-        scoreEl.textContent = score;
-        levelEl.textContent = level;
-        linesEl.textContent = lines;
-      }, 200);
-    }
-
-    // ─── 生成新方块 ──────────────────────────────────────────────────────────
-    function spawnPiece() {
-      currentPiece = nextPiece || randomPiece();
-      nextPiece = randomPiece();
-      drawNext();
-
-      if (!isValid(currentPiece)) {
-        endGame();
       }
     }
+  }
 
-    // ─── 移动操作 ────────────────────────────────────────────────────────────
-    function moveLeft() {
-      if (isValid(currentPiece, -1, 0)) currentPiece.x--;
+  // ═══════════════════════════════════════════════════════
+  //  绘制单个方块
+  // ═══════════════════════════════════════════════════════
+  function drawBlock(ctx, x, y, type, alpha=1, scale=1) {
+    const col = COLORS[type];
+    const px = x * BLOCK, py = y * BLOCK, s = BLOCK;
+    const pad = (1 - scale) * s * 0.5;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    ctx.fillStyle = col.fill;
+    ctx.beginPath();
+    ctx.roundRect(px+pad+1, py+pad+1, s*scale-2, s*scale-2, 3*scale);
+    ctx.fill();
+
+    const g = ctx.createLinearGradient(px+pad, py+pad, px+pad+s*scale, py+pad+s*scale);
+    g.addColorStop(0, 'rgba(255,255,255,0.35)');
+    g.addColorStop(0.5,'rgba(255,255,255,0.05)');
+    g.addColorStop(1, 'rgba(0,0,0,0.25)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.roundRect(px+pad+1, py+pad+1, s*scale-2, s*scale-2, 3*scale);
+    ctx.fill();
+
+    ctx.strokeStyle = col.stroke;
+    ctx.lineWidth = 1.5*scale;
+    ctx.beginPath();
+    ctx.roundRect(px+pad+1, py+pad+1, s*scale-2, s*scale-2, 3*scale);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.roundRect(px+pad+4*scale, py+pad+4*scale, 6*scale, 6*scale, 2*scale);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  主绘制
+  // ═══════════════════════════════════════════════════════
+  function drawBoard() {
+    // 震动偏移
+    let sx = 0, sy = 0;
+    if (shakeFrames > 0) {
+      const intensity = shakeIntensity * (shakeFrames / 8);
+      sx = (Math.random() - 0.5) * intensity;
+      sy = (Math.random() - 0.5) * intensity;
+      shakeFrames--;
     }
 
-    function moveRight() {
-      if (isValid(currentPiece, 1, 0)) currentPiece.x++;
-    }
+    ctx.save();
+    ctx.translate(sx, sy);
 
-    function moveDown() {
-      if (isValid(currentPiece, 0, 1)) {
-        currentPiece.y++;
-        return true;
-      } else {
-        lockPiece();
-        return false;
-      }
-    }
+    // 背景
+    ctx.fillStyle = '#07071a';
+    ctx.fillRect(-sx, -sy, canvas.width, canvas.height);
 
-    function rotate() {
-      const newRot = (currentPiece.rotation + 1) % TETROMINOES[currentPiece.type].length;
-      // 尝试旋转，若碰撞则尝试墙踢（wall kick）
-      if (isValid(currentPiece, 0, 0, newRot)) {
-        currentPiece.rotation = newRot;
-      } else if (isValid(currentPiece, 1, 0, newRot)) {
-        currentPiece.rotation = newRot;
-        currentPiece.x++;
-      } else if (isValid(currentPiece, -1, 0, newRot)) {
-        currentPiece.rotation = newRot;
-        currentPiece.x--;
-      } else if (isValid(currentPiece, 2, 0, newRot)) {
-        currentPiece.rotation = newRot;
-        currentPiece.x += 2;
-      } else if (isValid(currentPiece, -2, 0, newRot)) {
-        currentPiece.rotation = newRot;
-        currentPiece.x -= 2;
-      }
-    }
+    // 网格
+    ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+    ctx.lineWidth = 0.5;
+    for (let r=0; r<ROWS; r++)
+      for (let c=0; c<COLS; c++)
+        ctx.strokeRect(c*BLOCK, r*BLOCK, BLOCK, BLOCK);
 
-    function hardDrop() {
-      while (isValid(currentPiece, 0, 1)) {
-        currentPiece.y++;
-        score += 2;
-      }
-      scoreEl.textContent = score;
-      lockPiece();
-    }
-
-    // ─── 计算"幽灵"方块位置 ──────────────────────────────────────────────────
-    function getGhostY() {
-      let ghostY = currentPiece.y;
-      while (isValid({ ...currentPiece, y: ghostY + 1 }, 0, 0)) {
-        ghostY++;
-      }
-      return ghostY;
-    }
-
-    // ─── 绘制单个方块 ────────────────────────────────────────────────────────
-    function drawBlock(context, x, y, type, alpha = 1) {
-      const color = COLORS[type];
-      const px = x * BLOCK;
-      const py = y * BLOCK;
-      const s = BLOCK;
-
-      context.save();
-      context.globalAlpha = alpha;
-
-      // 主体
-      context.fillStyle = color.fill;
-      context.beginPath();
-      context.roundRect(px + 1, py + 1, s - 2, s - 2, 3);
-      context.fill();
-
-      // 高光
-      const grad = context.createLinearGradient(px, py, px + s, py + s);
-      grad.addColorStop(0, 'rgba(255,255,255,0.35)');
-      grad.addColorStop(0.5, 'rgba(255,255,255,0.05)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.2)');
-      context.fillStyle = grad;
-      context.beginPath();
-      context.roundRect(px + 1, py + 1, s - 2, s - 2, 3);
-      context.fill();
-
-      // 边框
-      context.strokeStyle = color.stroke;
-      context.lineWidth = 1.5;
-      context.beginPath();
-      context.roundRect(px + 1, py + 1, s - 2, s - 2, 3);
-      context.stroke();
-
-      // 内发光点
-      context.fillStyle = 'rgba(255,255,255,0.6)';
-      context.beginPath();
-      context.roundRect(px + 4, py + 4, 6, 6, 2);
-      context.fill();
-
-      context.restore();
-    }
-
-    // ─── 绘制游戏板 ──────────────────────────────────────────────────────────
-    function drawBoard() {
-      // 背景
-      ctx.fillStyle = '#0a0a1a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // 网格线
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-      ctx.lineWidth = 0.5;
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          ctx.strokeRect(c * BLOCK, r * BLOCK, BLOCK, BLOCK);
-        }
-      }
-
-      // 已固定方块
-      for (let r = 0; r < ROWS; r++) {
-        const isFlashing = flashingRows.includes(r);
-        for (let c = 0; c < COLS; c++) {
-          if (board[r][c]) {
-            if (isFlashing) {
-              ctx.fillStyle = 'rgba(255,255,255,0.9)';
-              ctx.fillRect(c * BLOCK, r * BLOCK, BLOCK, BLOCK);
-            } else {
-              drawBlock(ctx, c, r, board[r][c]);
-            }
-          }
-        }
-      }
-
-      if (!currentPiece) return;
-
-      // 幽灵方块
-      const ghostY = getGhostY();
-      const shape = currentPiece.shape;
-      for (let r = 0; r < shape.length; r++) {
-        for (let c = 0; c < shape[r].length; c++) {
-          if (!shape[r][c]) continue;
-          const gx = currentPiece.x + c;
-          const gy = ghostY + r;
-          if (gy >= 0 && gy < ROWS) {
-            ctx.save();
-            ctx.globalAlpha = 0.2;
-            ctx.fillStyle = COLORS[currentPiece.type].fill;
-            ctx.beginPath();
-            ctx.roundRect(gx * BLOCK + 2, gy * BLOCK + 2, BLOCK - 4, BLOCK - 4, 3);
-            ctx.fill();
-            ctx.strokeStyle = COLORS[currentPiece.type].stroke;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            ctx.restore();
-          }
-        }
-      }
-
-      // 当前方块
-      for (let r = 0; r < shape.length; r++) {
-        for (let c = 0; c < shape[r].length; c++) {
-          if (!shape[r][c]) continue;
-          const dx = currentPiece.x + c;
-          const dy = currentPiece.y + r;
-          if (dy >= 0) drawBlock(ctx, dx, dy, currentPiece.type);
+    // 已固定方块
+    const clearingRows = clearSweeps.map(s => s.row);
+    for (let r=0; r<ROWS; r++) {
+      const sweepIdx = clearSweeps.findIndex(s => s.row === r);
+      for (let c=0; c<COLS; c++) {
+        if (!board[r][c]) continue;
+        if (sweepIdx >= 0) {
+          // 扫光消除效果：方块向两侧飞出
+          const prog = clearSweeps[sweepIdx].progress;
+          const centerC = (COLS - 1) / 2;
+          const dir = c < centerC ? -1 : 1;
+          const dist = Math.abs(c - centerC);
+          const flyX = dir * prog * prog * (dist + 1) * 40;
+          const alpha = 1 - prog;
+          ctx.save();
+          ctx.translate(flyX, 0);
+          drawBlock(ctx, c, r, board[r][c], alpha, 1 - prog * 0.5);
+          ctx.restore();
+        } else {
+          drawBlock(ctx, c, r, board[r][c]);
         }
       }
     }
 
-    // ─── 绘制下一个方块预览 ──────────────────────────────────────────────────
-    function drawNext() {
-      nextCtx.fillStyle = '#0a0a1a';
-      nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-      if (!nextPiece) return;
+    // 扫光线
+    clearSweeps.forEach(({ row, progress }) => {
+      const cy = row * BLOCK + BLOCK / 2;
+      const sweep = progress * (canvas.width + 60) - 30;
+      const grad = ctx.createLinearGradient(sweep - 40, 0, sweep + 40, 0);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(0.5,'rgba(255,255,255,0.9)');
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.save();
+      ctx.globalAlpha = 1 - progress * 0.5;
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, row * BLOCK, canvas.width, BLOCK);
+      ctx.restore();
+    });
 
-      const shape = nextPiece.shape;
-      const rows = shape.length;
-      const cols = shape[0].length;
-      const blockSize = 20;
-      const offsetX = Math.floor((nextCanvas.width - cols * blockSize) / 2);
-      const offsetY = Math.floor((nextCanvas.height - rows * blockSize) / 2);
+    if (!currentPiece) { ctx.restore(); return; }
 
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          if (!shape[r][c]) continue;
-          const px = offsetX + c * blockSize;
-          const py = offsetY + r * blockSize;
-          const color = COLORS[nextPiece.type];
-
-          nextCtx.fillStyle = color.fill;
-          nextCtx.beginPath();
-          nextCtx.roundRect(px + 1, py + 1, blockSize - 2, blockSize - 2, 2);
-          nextCtx.fill();
-
-          const grad = nextCtx.createLinearGradient(px, py, px + blockSize, py + blockSize);
-          grad.addColorStop(0, 'rgba(255,255,255,0.3)');
-          grad.addColorStop(1, 'rgba(0,0,0,0.2)');
-          nextCtx.fillStyle = grad;
-          nextCtx.beginPath();
-          nextCtx.roundRect(px + 1, py + 1, blockSize - 2, blockSize - 2, 2);
-          nextCtx.fill();
-
-          nextCtx.strokeStyle = color.stroke;
-          nextCtx.lineWidth = 1;
-          nextCtx.beginPath();
-          nextCtx.roundRect(px + 1, py + 1, blockSize - 2, blockSize - 2, 2);
-          nextCtx.stroke();
-        }
-      }
-    }
-
-    // ─── 游戏循环 ────────────────────────────────────────────────────────────
-    function gameLoop(timestamp) {
-      if (!gameRunning || gamePaused) return;
-
-      const delta = timestamp - lastTime;
-      lastTime = timestamp;
-      dropCounter += delta;
-
-      const speed = LEVEL_SPEEDS[Math.min(level - 1, LEVEL_SPEEDS.length - 1)];
-
-      if (dropCounter >= speed) {
-        moveDown();
-        dropCounter = 0;
+    // 幽灵
+    const ghostY = getGhostY();
+    const shape = currentPiece.shape;
+    for (let r=0; r<shape.length; r++)
+      for (let c=0; c<shape[r].length; c++) {
+        if (!shape[r][c]) continue;
+        const gx = currentPiece.x+c, gy = ghostY+r;
+        if (gy<0||gy>=ROWS) continue;
+        ctx.save();
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = COLORS[currentPiece.type].fill;
+        ctx.beginPath();
+        ctx.roundRect(gx*BLOCK+3, gy*BLOCK+3, BLOCK-6, BLOCK-6, 3);
+        ctx.fill();
+        ctx.strokeStyle = COLORS[currentPiece.type].stroke;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
       }
 
-      drawBoard();
-      animFrameId = requestAnimationFrame(gameLoop);
+    // 当前方块（出生动画 scale/alpha）
+    const spawnScale = spawnAnim ? 0.4 + 0.6 * spawnAnim.progress : 1;
+    const spawnAlpha = spawnAnim ? spawnAnim.progress : 1;
+    for (let r=0; r<shape.length; r++)
+      for (let c=0; c<shape[r].length; c++) {
+        if (!shape[r][c]) continue;
+        const dx = currentPiece.x+c, dy = currentPiece.y+r;
+        if (dy >= 0) drawBlock(ctx, dx, dy, currentPiece.type, spawnAlpha, spawnScale);
+      }
+
+    // 粒子
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => {
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy += 0.15;
+      p.life -= p.decay;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // 浮动得分文字
+    scorePopups = scorePopups.filter(p => p.life > 0);
+    scorePopups.forEach(p => {
+      p.y   -= 1.2;
+      p.life -= 0.018;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, p.life * 3);
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 10;
+      ctx.font = `bold ${p.size}px "Press Start 2P", monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(p.text, p.x, p.y);
+      ctx.restore();
+    });
+
+    ctx.restore();
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  下一个方块预览
+  // ═══════════════════════════════════════════════════════
+  function drawNext() {
+    nextCtx.fillStyle = '#07071a';
+    nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+    if (!nextPiece) return;
+    const shape = nextPiece.shape;
+    const rows = shape.length, cols = shape[0].length;
+    const bs = 20;
+    const ox = Math.floor((nextCanvas.width  - cols*bs) / 2);
+    const oy = Math.floor((nextCanvas.height - rows*bs) / 2);
+    for (let r=0; r<rows; r++)
+      for (let c=0; c<cols; c++) {
+        if (!shape[r][c]) continue;
+        const px = ox+c*bs, py = oy+r*bs;
+        const col = COLORS[nextPiece.type];
+        nextCtx.fillStyle = col.fill;
+        nextCtx.beginPath();
+        nextCtx.roundRect(px+1, py+1, bs-2, bs-2, 2);
+        nextCtx.fill();
+        const g = nextCtx.createLinearGradient(px,py,px+bs,py+bs);
+        g.addColorStop(0,'rgba(255,255,255,0.3)');
+        g.addColorStop(1,'rgba(0,0,0,0.2)');
+        nextCtx.fillStyle = g;
+        nextCtx.beginPath();
+        nextCtx.roundRect(px+1, py+1, bs-2, bs-2, 2);
+        nextCtx.fill();
+        nextCtx.strokeStyle = col.stroke;
+        nextCtx.lineWidth = 1;
+        nextCtx.beginPath();
+        nextCtx.roundRect(px+1, py+1, bs-2, bs-2, 2);
+        nextCtx.stroke();
+      }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  操作
+  // ═══════════════════════════════════════════════════════
+  function moveLeft()  { if (isValid(currentPiece,-1,0)) currentPiece.x--; }
+  function moveRight() { if (isValid(currentPiece, 1,0)) currentPiece.x++; }
+
+  function moveDown() {
+    if (isValid(currentPiece,0,1)) { currentPiece.y++; return true; }
+    lockPiece(); return false;
+  }
+
+  function rotate() {
+    const nr = (currentPiece.rotation+1) % TETROMINOES[currentPiece.type].length;
+    const kicks = [0,1,-1,2,-2];
+    for (const k of kicks) {
+      if (isValid(currentPiece, k, 0, nr)) {
+        currentPiece.rotation = nr;
+        currentPiece.x += k;
+        break;
+      }
+    }
+  }
+
+  function hardDrop() {
+    let dropped = 0;
+    while (isValid(currentPiece,0,1)) { currentPiece.y++; dropped++; }
+    score += dropped * 2;
+    scoreEl.textContent = score;
+
+    // 冲击波闪光
+    dropFlash.style.transition = 'none';
+    dropFlash.style.opacity = '0.35';
+    setTimeout(() => {
+      dropFlash.style.transition = 'opacity 0.25s ease';
+      dropFlash.style.opacity = '0';
+    }, 30);
+
+    // 轻微震动
+    shakeFrames = 5;
+    shakeIntensity = 4;
+
+    lockPiece();
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  锁定
+  // ═══════════════════════════════════════════════════════
+  function lockPiece() {
+    const shape = currentPiece.shape;
+    for (let r=0; r<shape.length; r++)
+      for (let c=0; c<shape[r].length; c++) {
+        if (!shape[r][c]) continue;
+        const y = currentPiece.y+r, x = currentPiece.x+c;
+        if (y < 0) { endGame(); return; }
+        board[y][x] = currentPiece.type;
+      }
+    clearLines();
+    spawnPiece();
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  消行（动画版）
+  // ═══════════════════════════════════════════════════════
+  function clearLines() {
+    const rowsToClear = [];
+    for (let r=ROWS-1; r>=0; r--)
+      if (board[r].every(c => c !== null)) rowsToClear.push(r);
+    if (!rowsToClear.length) return;
+
+    const oldLevel = level;
+
+    // 爆炸粒子
+    rowsToClear.forEach(r => spawnExplosion(r));
+
+    // 扫光动画对象
+    rowsToClear.forEach(r => clearSweeps.push({ row: r, progress: 0 }));
+
+    // 得分 popup
+    const cleared = rowsToClear.length;
+    const gained  = LINE_SCORES[cleared] * level;
+    const midRow  = rowsToClear[Math.floor(rowsToClear.length / 2)];
+    const popColors = ['','#ffffff','#60a5fa','#a78bfa','#fbbf24'];
+    const popLabels = ['','SINGLE','DOUBLE','TRIPLE','TETRIS!!'];
+    scorePopups.push({
+      x: canvas.width / 2,
+      y: midRow * BLOCK + BLOCK / 2,
+      text: popLabels[cleared] || `×${cleared}`,
+      life: 1,
+      size: cleared >= 4 ? 11 : 9,
+      color: popColors[cleared] || '#fff',
+    });
+    scorePopups.push({
+      x: canvas.width / 2,
+      y: midRow * BLOCK + BLOCK / 2 + 20,
+      text: `+${gained}`,
+      life: 1,
+      size: 8,
+      color: '#34d399',
+    });
+
+    // 等扫光动画完成后再清行
+    setTimeout(() => {
+      clearSweeps = clearSweeps.filter(s => !rowsToClear.includes(s.row));
+      rowsToClear.slice().sort((a,b)=>b-a).forEach(r => {
+        board.splice(r, 1);
+        board.unshift(Array(COLS).fill(null));
+      });
+
+      lines += cleared;
+      score += gained;
+      level = Math.floor(lines/10)+1;
+
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('tetris-hs', highScore);
+        animateNumber(highScoreEl, highScore);
+      }
+      animateNumber(scoreEl, score);
+      animateNumber(levelEl, level);
+      animateNumber(linesEl, lines);
+
+      // 升级动画
+      if (level !== oldLevel) {
+        showLevelUp(level);
+        updateGlow(level);
+      }
+    }, 420);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  数字弹跳更新
+  // ═══════════════════════════════════════════════════════
+  function animateNumber(el, val) {
+    el.textContent = val;
+    el.classList.remove('number-pop');
+    void el.offsetWidth;
+    el.classList.add('number-pop');
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  升级提示
+  // ═══════════════════════════════════════════════════════
+  function showLevelUp(lv) {
+    levelUpContainer.innerHTML = '';
+    const div = document.createElement('div');
+    div.id = 'level-up-toast';
+    div.className = 'text-center';
+    div.innerHTML = `
+      <p class="text-yellow-300 text-sm mb-1">LEVEL UP!</p>
+      <p class="text-white text-2xl">${lv}</p>
+    `;
+    levelUpContainer.appendChild(div);
+    setTimeout(() => { if (div.parentNode) div.remove(); }, 1400);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  边框颜色随关卡变化
+  // ═══════════════════════════════════════════════════════
+  function updateGlow(lv) {
+    LEVEL_GLOWS.forEach(g => canvasWrap.classList.remove(g));
+    canvasWrap.classList.add(LEVEL_GLOWS[(lv-1) % LEVEL_GLOWS.length]);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  生成新方块
+  // ═══════════════════════════════════════════════════════
+  function spawnPiece() {
+    currentPiece = nextPiece || randomPiece();
+    nextPiece = randomPiece();
+    drawNext();
+    spawnAnim = { progress: 0 };
+    if (!isValid(currentPiece)) endGame();
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  游戏循环
+  // ═══════════════════════════════════════════════════════
+  function gameLoop(ts) {
+    if (!gameRunning || gamePaused) return;
+    const delta = ts - lastTime;
+    lastTime = ts;
+    dropCounter += delta;
+
+    // 扫光进度推进
+    clearSweeps.forEach(s => { s.progress = Math.min(1, s.progress + delta / 400); });
+
+    // 出生动画
+    if (spawnAnim) {
+      spawnAnim.progress = Math.min(1, spawnAnim.progress + delta / 150);
+      if (spawnAnim.progress >= 1) spawnAnim = null;
     }
 
-    // ─── 开始游戏 ────────────────────────────────────────────────────────────
-    function startGame() {
-      board = createBoard();
-      score = 0;
-      level = 1;
-      lines = 0;
+    const speed = LEVEL_SPEEDS[Math.min(level-1, LEVEL_SPEEDS.length-1)];
+    if (dropCounter >= speed) {
+      moveDown();
       dropCounter = 0;
-      gameRunning = true;
-      gamePaused = false;
-      flashingRows = [];
-
-      scoreEl.textContent = 0;
-      levelEl.textContent = 1;
-      linesEl.textContent = 0;
-
-      overlay.classList.add('hidden');
-      pauseBtn.classList.remove('hidden');
-
-      nextPiece = randomPiece();
-      spawnPiece();
-
-      lastTime = performance.now();
-      animFrameId = requestAnimationFrame(gameLoop);
     }
 
-    // ─── 结束游戏 ────────────────────────────────────────────────────────────
-    function endGame() {
-      gameRunning = false;
-      cancelAnimationFrame(animFrameId);
-      pauseBtn.classList.add('hidden');
+    drawBoard();
+    animFrameId = requestAnimationFrame(gameLoop);
+  }
 
+  // ═══════════════════════════════════════════════════════
+  //  游戏结束动画
+  // ═══════════════════════════════════════════════════════
+  function playGameOverAnim(cb) {
+    // 逐行从下到上变灰崩塌
+    let row = ROWS - 1;
+    function step() {
+      if (row < 0) { cb(); return; }
+      for (let c=0; c<COLS; c++) {
+        if (board[row][c]) board[row][c] = '_dead_';
+      }
+      row--;
+      drawBoardStatic();
+      setTimeout(step, 30);
+    }
+    // 临时扩展颜色表支持灰色
+    COLORS['_dead_'] = { fill: '#374151', stroke: '#1f2937' };
+    step();
+  }
+
+  function drawBoardStatic() {
+    ctx.fillStyle = '#07071a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+    ctx.lineWidth = 0.5;
+    for (let r=0; r<ROWS; r++)
+      for (let c=0; c<COLS; c++) ctx.strokeRect(c*BLOCK, r*BLOCK, BLOCK, BLOCK);
+    for (let r=0; r<ROWS; r++)
+      for (let c=0; c<COLS; c++)
+        if (board[r][c]) drawBlock(ctx, c, r, board[r][c]);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  开始 / 结束 / 暂停
+  // ═══════════════════════════════════════════════════════
+  function startGame() {
+    board = createBoard();
+    score = 0; level = 1; lines = 0;
+    dropCounter = 0; particles = []; scorePopups = []; clearSweeps = [];
+    gameRunning = true; gamePaused = false; spawnAnim = null;
+    shakeFrames = 0;
+
+    scoreEl.textContent = 0; levelEl.textContent = 1; linesEl.textContent = 0;
+    overlay.classList.add('hidden');
+    pauseBtn.classList.remove('hidden');
+    updateGlow(1);
+
+    nextPiece = randomPiece();
+    spawnPiece();
+
+    lastTime = performance.now();
+    animFrameId = requestAnimationFrame(gameLoop);
+  }
+
+  function endGame() {
+    gameRunning = false;
+    cancelAnimationFrame(animFrameId);
+    pauseBtn.classList.add('hidden');
+
+    // 震动
+    shakeFrames = 12; shakeIntensity = 8;
+    canvasWrap.classList.add('shake');
+    canvasWrap.addEventListener('animationend', () => canvasWrap.classList.remove('shake'), {once:true});
+
+    playGameOverAnim(() => {
       overlayTitle.innerHTML = '游戏<br/>结束';
       overlaySubtitle.innerHTML = `得分：${score}<br/><span class="text-yellow-400">最高分：${highScore}</span>`;
       startBtn.textContent = '再来一局';
       overlay.classList.remove('hidden');
-    }
-
-    // ─── 暂停/继续 ───────────────────────────────────────────────────────────
-    function togglePause() {
-      if (!gameRunning) return;
-      gamePaused = !gamePaused;
-
-      if (gamePaused) {
-        pauseBtn.textContent = '▶ 继续';
-        cancelAnimationFrame(animFrameId);
-        // 显示暂停遮罩
-        overlayTitle.innerHTML = '游戏<br/>暂停';
-        overlaySubtitle.innerHTML = '按 P 或点击继续';
-        startBtn.textContent = '继续游戏';
-        overlay.classList.remove('hidden');
-      } else {
-        pauseBtn.textContent = '⏸ 暂停';
-        overlay.classList.add('hidden');
-        lastTime = performance.now();
-        animFrameId = requestAnimationFrame(gameLoop);
-      }
-    }
-
-    // ─── 事件监听 ────────────────────────────────────────────────────────────
-    startBtn.addEventListener('click', () => {
-      if (gamePaused) {
-        togglePause();
-      } else {
-        startGame();
-      }
     });
+  }
 
-    pauseBtn.addEventListener('click', togglePause);
+  function togglePause() {
+    if (!gameRunning) return;
+    gamePaused = !gamePaused;
+    if (gamePaused) {
+      pauseBtn.textContent = '▶ 继续';
+      cancelAnimationFrame(animFrameId);
+      overlayTitle.innerHTML = '游戏<br/>暂停';
+      overlaySubtitle.innerHTML = '按 P 或点击继续';
+      startBtn.textContent = '继续游戏';
+      overlay.classList.remove('hidden');
+    } else {
+      pauseBtn.textContent = '⏸ 暂停';
+      overlay.classList.add('hidden');
+      lastTime = performance.now();
+      animFrameId = requestAnimationFrame(gameLoop);
+    }
+  }
 
-    let keyRepeatTimer = null;
-    let keyRepeatDelay = 150;
+  // ═══════════════════════════════════════════════════════
+  //  事件
+  // ═══════════════════════════════════════════════════════
+  startBtn.addEventListener('click', () => gamePaused ? togglePause() : startGame());
+  pauseBtn.addEventListener('click', togglePause);
 
-    document.addEventListener('keydown', (e) => {
-      if (!gameRunning) return;
+  document.addEventListener('keydown', e => {
+    if (!gameRunning) return;
+    switch (e.code) {
+      case 'ArrowLeft':  e.preventDefault(); moveLeft();  break;
+      case 'ArrowRight': e.preventDefault(); moveRight(); break;
+      case 'ArrowDown':  e.preventDefault(); if (!gamePaused) moveDown();   break;
+      case 'ArrowUp':    e.preventDefault(); if (!gamePaused) rotate();     break;
+      case 'Space':      e.preventDefault(); if (!gamePaused) hardDrop();   break;
+      case 'KeyP':       e.preventDefault(); togglePause(); break;
+    }
+  });
 
-      switch (e.code) {
-        case 'ArrowLeft':
-          e.preventDefault();
-          moveLeft();
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          moveRight();
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          if (!gamePaused) moveDown();
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          if (!gamePaused) rotate();
-          break;
-        case 'Space':
-          e.preventDefault();
-          if (!gamePaused) hardDrop();
-          break;
-        case 'KeyP':
-          e.preventDefault();
-          togglePause();
-          break;
-      }
-    });
+  // 触摸
+  let tx=0, ty=0, tt=0, swiped=false;
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+    tt = Date.now(); swiped = false;
+  }, {passive:false});
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!gameRunning || gamePaused) return;
+    const dx = e.touches[0].clientX - tx;
+    const dy = e.touches[0].clientY - ty;
+    if (!swiped && Math.abs(dx) > 20) {
+      dx > 0 ? moveRight() : moveLeft();
+      tx = e.touches[0].clientX; swiped=true;
+      setTimeout(()=>swiped=false, 80);
+    }
+    if (!swiped && dy > 30) {
+      moveDown(); ty = e.touches[0].clientY; swiped=true;
+      setTimeout(()=>swiped=false, 80);
+    }
+  }, {passive:false});
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    const el = Date.now()-tt;
+    const dx = Math.abs(e.changedTouches[0].clientX-tx);
+    const dy = Math.abs(e.changedTouches[0].clientY-ty);
+    if (el<200 && dx<10 && dy<10 && !gamePaused) rotate();
+  }, {passive:false});
 
-    // ─── 手机触摸支持 ────────────────────────────────────────────────────────
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchStartTime = 0;
-    let isSwiped = false;
-
-    canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      touchStartTime = Date.now();
-      isSwiped = false;
-    }, { passive: false });
-
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (!gameRunning || gamePaused) return;
-      const dx = e.touches[0].clientX - touchStartX;
-      const dy = e.touches[0].clientY - touchStartY;
-
-      if (!isSwiped && Math.abs(dx) > 20) {
-        if (dx > 0) moveRight(); else moveLeft();
-        touchStartX = e.touches[0].clientX;
-        isSwiped = true;
-        setTimeout(() => { isSwiped = false; }, 80);
-      }
-      if (!isSwiped && dy > 30) {
-        moveDown();
-        touchStartY = e.touches[0].clientY;
-        isSwiped = true;
-        setTimeout(() => { isSwiped = false; }, 80);
-      }
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      const elapsed = Date.now() - touchStartTime;
-      const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
-      const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
-      if (elapsed < 200 && dx < 10 && dy < 10) {
-        if (!gamePaused) rotate();
-      }
-    }, { passive: false });
-
-    // ─── 初始渲染 ────────────────────────────────────────────────────────────
-    ctx.fillStyle = '#0a0a1a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    nextCtx.fillStyle = '#0a0a1a';
-    nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+  // ═══════════════════════════════════════════════════════
+  //  初始渲染
+  // ═══════════════════════════════════════════════════════
+  ctx.fillStyle = '#07071a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  nextCtx.fillStyle = '#07071a';
+  nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
   </script>
 </body>
 </html>
